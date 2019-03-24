@@ -7,7 +7,7 @@ import { Platform,
   Button,
   TouchableOpacity
 } from 'react-native';
-import $ from "jquery";
+import axios from "axios";
 
 class TestComponent extends React.Component {
   constructor(props) {
@@ -35,7 +35,7 @@ class TestComponent extends React.Component {
   }
 
   getSubtitles() {
-    console.log("getting subtitles", $);
+    console.log("getting subtitles");
   }
 
   render() {
