@@ -5,39 +5,34 @@ import { Platform,
   View,
   TextInput,
   Button,
-  TouchableOpacity
+  TouchableOpacity,
+  ScrollView
 } from 'react-native';
 import axios from "axios";
+import {XMLSerializer} from "xmldom";
 
 class TestComponent extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      default: "true",
-      message: "notChangedYet",
       url: null,
       spinner: false,
       formattedText: null
     }
     //bindings
-    this.testPress = this.testPress.bind(this);
     this.inputChange = this.inputChange.bind(this);
     this.getSubtitles = this.getSubtitles.bind(this);
+    this.reset = this.reset.bind(this);
 
   }
   //functions
-
-  testPress() {
-    console.log("onPress activated");
-    this.setState({ message: "Changed! "});
-  }
 
   inputChange(text) {
     this.setState({ url: text });
   }
 
   async getSubtitles() {
-    console.log("getting subtitles");
+    console.log("\n\ngetting subtitles");
     //https://www.youtube.com/watch?v=FIORjGvT0kk&list=PL4cUxeGkcC9gfoKa5la9dsdCNpuey2s-V
     //https://www.youtube.com/watch?v=XJGiS83eQLk&t=0h3m57s
     // via regex (could also just slice)
@@ -45,19 +40,36 @@ class TestComponent extends React.Component {
     const baseStr = "https://www.youtube.com/api/timedtext?lang=en&v=";
     const link = baseStr + vidId;
     this.setState({ spinner: true });
-    console.log("link being queried", link);
+    console.log("\n\nlink being queried", link);
     let xmlResponse = await axios.get(link);
-    console.log("xmlResponse", xmlResponse);
-    let serializer = new XMLSerializer();
-    var formattedText = serializer.serializeToString(xmlResponse)
-                                  .replace(/<text start="[\d\.]+" dur="[\d\.]+">[\s\n]+<\/text>/g, "")
-                                  .replace(/\n{2,}/, "")
-                                  .replace(/\n/g, "\r\n")
-                                  .replace(/<\/text>/g, "\r\n")
-                                  .replace(/<[^>]+>/g, "")
-                                  .replace(/&amp;#39;/g, "'")
-                                  .trim();
+    console.log("\n\nxmlResponse", typeof xmlResponse.data, xmlResponse.data);
+    // let serializer = new XMLSerializer();
+    // var formattedText = serializer.serializeToString(xmlResponse.data)
+    //                               .replace(/<text start="[\d\.]+" dur="[\d\.]+">[\s\n]+<\/text>/g, "")
+    //                               .replace(/\n{2,}/, "")
+    //                               // .replace(/\n/g, "\r\n")
+    //                               .replace(/<\/text>/g, "\n")
+    //                               .replace(/<[^>]+>/g, "")
+    //                               .replace(/&amp;#39;/g, "'")
+    //                               .trim();
+    let stringifiedXML = xmlResponse.data;
+    let formattedText = stringifiedXML.replace(/<text start="[\d\.]+" dur="[\d\.]+">[\s\n]+<\/text>/g, "")
+                                      .replace(/\n{2,}/, "")
+                                      // .replace(/\n/g, "\r\n")
+                                      .replace(/<\/text>/g, "\n")
+                                      .replace(/<[^>]+>/g, "")
+                                      .replace(/&amp;#39;/g, "'")
+                                      .trim();
+    console.log("\n\nformatted text", formattedText);
     this.setState({ formattedText, spinner: false });
+  }
+
+  reset() {
+    this.setState({
+      url: null,
+      spinner: false,
+      formattedText: null
+    });
   }
 
   render() {
@@ -72,9 +84,15 @@ class TestComponent extends React.Component {
     } else if (this.state.formattedText) {
       return (
         <View>
-          <Text>
-            {this.state.formattedText}
-          </Text>
+          <ScrollView>
+            <Text style={styles.subtitles}>
+              {this.state.formattedText}
+            </Text>
+            <Button 
+              title="Return"
+              onPress={this.reset}
+            />
+          </ScrollView>
         </View>
       )
     } else {
@@ -141,5 +159,13 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     borderRadius: 10,
     height: 35
+  },
+  subtitles: {
+    textAlign: "center",
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingLeft: 3,
+    paddingRight: 3,
+    marginBottom: 16
   }
 });
